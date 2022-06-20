@@ -1,0 +1,462 @@
+{
+"Parameters": {
+    "LatestAmiId": {
+        "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+        "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+    }
+},
+
+"Resources": {
+    "VPC": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+            "CidrBlock": "10.16.0.0/16",
+            "EnableDnsHostnames": "True",
+            "EnableDnsSupport": "True",
+            "InstanceTenancy": "default",
+            "Tags":[
+                {"Key" : "Name","Value" : "TwoTieredVPC"}
+            ]
+        }
+    },
+  
+    "PublicSubnet1": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+            "AvailabilityZone": {
+                "Fn::Select" : ["0", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock": {
+                "Fn::Select" : [
+                    "0",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch": "True",
+            "VpcId": {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PublicSubnet1"}
+            ]
+        }
+    },
+
+    "PublicSubnet2": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+            "AvailabilityZone": {
+                "Fn::Select" : ["1", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock":  {
+                "Fn::Select" : [
+                    "1",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch": "True",
+            "VpcId": {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PublicSubnet2"}
+            ]
+        }
+    },
+
+    "PrivateSubnet1": {
+        "Type" : "AWS::EC2::Subnet",
+        "Properties" : {
+            "AvailabilityZone" :  {
+                "Fn::Select" : ["0", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock" :  {
+                "Fn::Select" : [
+                    "2",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch" : "False",
+            "VpcId" : {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PrivateSubnet1"}
+            ]
+        }
+    },
+
+    "PrivateSubnet2": {
+        "Type" : "AWS::EC2::Subnet",
+        "Properties" : {
+            "AvailabilityZone" :  {
+                "Fn::Select" : ["1", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock" :  {
+                "Fn::Select" : [
+                    "3",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch" : "False",
+            "VpcId" : {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PrivateSubnet2"}
+            ]
+        }
+    },
+
+    "PrivateSubnet3": {
+        "Type" : "AWS::EC2::Subnet",
+        "Properties" : {
+            "AvailabilityZone" :  {
+                "Fn::Select" : ["0", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock" :  {
+                "Fn::Select" : [
+                    "4",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch" : "False",
+            "VpcId" : {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PrivateSubnet3"}
+            ]
+        }
+    },
+
+    "PrivateSubnet4": {
+        "Type" : "AWS::EC2::Subnet",
+        "Properties" : {
+            "AvailabilityZone" :  {
+                "Fn::Select" : ["1", {"Fn::GetAZs" : "" }]
+            },
+            "CidrBlock" :  {
+                "Fn::Select" : [
+                    "5",
+                    {"Fn::Cidr" : [
+                        {"Fn::GetAtt" : 
+                            ["VPC","CidrBlock"]}, 
+                        6, 12
+                        ]
+                    }
+                ]
+            },
+            "MapPublicIpOnLaunch" : "False",
+            "VpcId" : {"Ref":"VPC"},
+            "Tags":[
+                {"Key" : "Name","Value" : "PrivateSubnet4"}
+            ]
+        }
+    },
+
+    "InternetGateway": {
+        "Type" : "AWS::EC2::InternetGateway"
+    },
+
+    "VPCInternetGatewayAttachment": {
+        "Type" : "AWS::EC2::VPCGatewayAttachment",
+        "Properties" : {
+            "InternetGatewayId" : {"Ref":"InternetGateway"},
+            "VpcId" : {"Ref":"VPC"}
+        }
+    },
+
+    "RouteTableWithIGDefaultRoute": {
+        "Type" : "AWS::EC2::RouteTable",
+        "Properties" : {
+            "VpcId" : {"Ref":"VPC"}
+        }
+    },
+
+    "IGDefaultRoute": {
+        "Type" : "AWS::EC2::Route",
+        "Properties" : {
+            "DestinationCidrBlock" : "0.0.0.0/0",
+            "GatewayId" : {"Ref":"InternetGateway"},
+            "RouteTableId" : {"Ref":"RouteTableWithIGDefaultRoute"}
+        },
+        "DependsOn": [
+            "VPCInternetGatewayAttachment"
+        ]
+    },
+
+    "PublicSubnet1RTAssociation" : {
+        "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties" : {
+           "SubnetId" : { "Ref" : "PublicSubnet1" },
+           "RouteTableId" : { "Ref" : "RouteTableWithIGDefaultRoute" }
+        }
+    },
+
+    "PublicSubnet2RTAssociation" : {
+        "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties" : {
+           "SubnetId" : { "Ref" : "PublicSubnet2" },
+           "RouteTableId" : { "Ref" : "RouteTableWithIGDefaultRoute" }
+        }
+    },
+
+    "PublicLoadBalancer": {
+        "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+        "Properties" : {
+            "Scheme" : "internet-facing",
+            "SecurityGroups" : [{"Ref":"PublicLoadBalancerSG"}],
+            "Subnets" : [
+                {"Ref":"PublicSubnet1"},
+                {"Ref":"PublicSubnet2"}
+            ],
+            "Tags" : [
+                {"Key" : "Name","Value" : "PublicLoadBalancer"} 
+            ],
+            "Type" : "application"
+        },
+        "DependsOn": [
+            "InternetGateway", 
+            "VPCInternetGatewayAttachment"
+        ]
+    },
+
+    "PublicLBListener": {
+        "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+        "Properties" : {
+            "DefaultActions" : [
+                {"TargetGroupArn" : {"Ref":"PublicLBTargetGroup"},
+                "Type" : "forward"}
+            ],
+            "LoadBalancerArn" : {"Ref":"PublicLoadBalancer"},
+            "Port" : 80,
+            "Protocol" : "HTTP"
+        }
+    },
+
+    "PublicLBTargetGroup": {
+        "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+        "Properties" : {
+            "Name" : "PublicLBTargetGroup",
+            "Protocol" : "HTTPS",
+            "Port" : 443,
+            "VpcId" : {"Ref":"VPC"}
+        }
+    },
+
+    "PublicLoadBalancerSG": {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+            "GroupDescription" : "Security Group for the Public Load Balancer",
+            "GroupName" : "PublicLoadBalancerSG",
+            "SecurityGroupIngress" : [
+                {"CidrIp" : "0.0.0.0/0",
+                "Description" : "Allow inbound HTTP traffic from all IPv4 addresses; this should be HTTPS but creator does not have SSL certificate to use for HTTPS encryption",
+                "FromPort" : 80,
+                "IpProtocol" : "TCP",
+                "ToPort" : 80}
+            ],
+            "VpcId" : {"Ref":"VPC"}
+        }
+    },
+    "PublicLBSGHTTPSEgress": {
+        "Type" : "AWS::EC2::SecurityGroupEgress",
+        "Properties" : {
+            "Description" : "Allow outbound HTTPS traffic to Compute Tier Instance Security Group",
+            "DestinationSecurityGroupId" : {"Ref":"ComputeTierInstanceSG"},
+            "FromPort" : 443,
+            "GroupId" : {"Ref":"PublicLoadBalancerSG"},
+            "IpProtocol" : "TCP",
+            "ToPort" : 443
+        }
+    },
+    
+    "ComputeLaunchTemplate": {
+        "Type" : "AWS::EC2::LaunchTemplate",
+        "Properties" : {
+            "LaunchTemplateData" : {
+                "IamInstanceProfile" : {
+                    "Name" : {"Ref":"ComputeTierInstanceProfile"}
+                },
+                "ImageId" : 
+                    {"Ref":"LatestAmiId"},
+                "InstanceType" : "t2.micro",
+                "SecurityGroupIds" : [{"Ref":"ComputeTierInstanceSG"}]
+            },
+            "LaunchTemplateName" : "Compute"
+        }
+    },
+
+    "ComputeTierInstanceSG": {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+            "GroupDescription" : "Security Group for Compute Tier Instance",
+            "GroupName" : "ComputeTierInstanceSG",
+            "SecurityGroupIngress" : [
+                {"Description" : "Allow inbound HTTPS traffic from Public Load Balancer Security Group",
+                "SourceSecurityGroupId" : {"Ref":"PublicLoadBalancerSG"},
+                "FromPort" : 443,
+                "IpProtocol" : "TCP",
+                "ToPort" : 443}
+            ],
+            "VpcId" : {"Ref":"VPC"}
+        }
+    },
+    "ComputeTierInstanceSGEgress": {
+        "Type" : "AWS::EC2::SecurityGroupEgress",
+        "Properties" : {
+            "Description" : "Allow outbound HTTPS traffic to MySQL Relational Database Security Group",
+            "DestinationSecurityGroupId" : {"Ref":"MySQLRDSG"},
+            "GroupId" : {"Ref":"ComputeTierInstanceSG"},
+            "FromPort" : 443,
+            "IpProtocol" : "TCP",
+            "ToPort" : 443
+        }
+    },
+
+    "ComputeTierInstanceProfile": {
+        "Type" : "AWS::IAM::InstanceProfile",
+        "Properties" : {
+            "InstanceProfileName" : "ComputeTierInstanceProfile",
+            "Roles" : [ {"Ref":"RDSFullAccessRole"} ]
+        }
+    },
+
+    "RDSFullAccessRole": {
+        "Type" : "AWS::IAM::Role",
+        "Properties" : {
+            "AssumeRolePolicyDocument" : {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": ["ec2.amazonaws.com"]
+                        },
+                        "Action": ["sts:AssumeRole"]
+                    }
+                ]
+            },
+            "Description" : "Role granting access to RD instances",
+            "ManagedPolicyArns" : ["arn:aws:iam::aws:policy/AmazonRDSFullAccess"],
+            "RoleName" : "RDSFullAccessRole"
+        }
+    },
+
+    "ComputeASG": {
+        "Type" : "AWS::AutoScaling::AutoScalingGroup",
+        "Properties" : {
+            "AutoScalingGroupName" : "Compute",
+            "DesiredCapacity" : 2,
+            "LaunchTemplate" : {
+                "LaunchTemplateId" : {"Ref":"ComputeLaunchTemplate"},
+                "Version" : {"Fn::GetAtt":["ComputeLaunchTemplate","LatestVersionNumber"]
+                }
+            },
+            "MaxSize" : 4,
+            "MinSize" : 2,
+            "TargetGroupARNs" : [ 
+                {"Ref":"PublicLBTargetGroup"} 
+            ],
+            "VPCZoneIdentifier" : [ 
+                {"Ref":"PrivateSubnet1"}, {"Ref":"PrivateSubnet2"} 
+            ]
+        }
+    },
+    
+    "ComputeASGScalingPolicy": {
+        "Type" : "AWS::AutoScaling::ScalingPolicy",
+        "Properties" : {
+            "AutoScalingGroupName" : {"Ref":"ComputeASG"},
+            "PolicyType" : "TargetTrackingScaling",
+            "TargetTrackingConfiguration" : {
+                "PredefinedMetricSpecification": {
+                    "PredefinedMetricType":"ASGAverageCPUUtilization"},
+                "TargetValue" : 50
+        }
+        }
+    },
+
+    "MySQLRDPrimaryInstance": {
+        "Type" : "AWS::RDS::DBInstance",
+        "Properties" : {
+            "AllocatedStorage" : 5,
+            "BackupRetentionPeriod" : 30,
+            "DBInstanceClass" : "db.t2.micro",
+            "DBInstanceIdentifier" : "PrimaryInstance",
+            "DBName" : "MySQLRD",
+            "DBSubnetGroupName" : "MySQLRDSubnetGroup",
+            "EnableIAMDatabaseAuthentication" : "True",
+            "Engine" : "mysql",
+            "MasterUsername" : "MasterUser",
+            "MasterUserPassword" : "password",
+            "MaxAllocatedStorage" : 10,
+            "MultiAZ" : "True",
+            "PubliclyAccessible" : "False",
+            "StorageType" : "gp2",
+            "VPCSecurityGroups" : [{"Ref":"MySQLRDSG"}]
+        }
+    },
+
+    "MySQLRDReadReplicaInstance": {
+        "Type" : "AWS::RDS::DBInstance",
+        "Properties" : {
+            "AllocatedStorage" : 5,
+            "DBInstanceClass" : "db.t2.micro",
+            "DBInstanceIdentifier" : "ReadReplica",
+            "Engine" : "mysql",
+            "MaxAllocatedStorage" : 10,
+            "MultiAZ" : "False",
+            "PubliclyAccessible" : "False",
+            "SourceDBInstanceIdentifier" : {"Ref":"MySQLRDPrimaryInstance"},
+            "StorageType" : "gp2",
+            "VPCSecurityGroups" : [{"Ref":"MySQLRDSG"}]
+        }
+    },
+
+    "MySQLSubnetGroup": {
+        "Type" : "AWS::RDS::DBSubnetGroup",
+        "Properties" : {
+            "DBSubnetGroupDescription" : "MySQL Relational Database Subnet Group",
+            "DBSubnetGroupName" : "MySQLRDSubnetGroup",
+            "SubnetIds" : [
+                {"Ref":"PrivateSubnet3"},
+                {"Ref":"PrivateSubnet4"}
+            ]
+          }
+      },
+
+    "MySQLRDSG": {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+            "GroupDescription" : "Security Group for MySQL Relational Database",
+            "GroupName" : "MySQLRDSG",
+            "SecurityGroupIngress" : [
+                {"Description" : "Allow inbound HTTPS traffic from Compute Tier Instance Security Group",
+                "SourceSecurityGroupId" : {"Ref":"ComputeTierInstanceSG"},
+                "FromPort" : 443,
+                "IpProtocol" : "TCP",
+                "ToPort" : 443}
+            ],
+            "VpcId" : {"Ref":"VPC"}
+        }
+    }
+
+}
+}
