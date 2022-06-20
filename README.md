@@ -1,1 +1,1 @@
-# TwoTieredCloudArchitecture
+This repository contains the CloudFormation code to deploy a two-tiered cloud server architecture. I wrote the code from the ground up to demonstrate some of the things I learned from my AWS Solutions Architect Associates course.
